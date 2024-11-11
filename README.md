@@ -1,21 +1,21 @@
 PROJECT #1
 -------------------------------------------------------------------------------------------
 **Unfinished**
-Compute Jacobian for 4R robot
-Computer Jacobian for arbitrary link count
-One DLS loop, no repition for angle diff minimization 
-Full DLS loop for one point along trajectory
-Full DLS loop for arbitrary trajectory points
-Evaluate performance of robot
+* One DLS loop, no repetition for angle diff minimization 
+* Full DLS loop for one point along trajectory
+* Full DLS loop for arbitrary trajectory points
+* Evaluate performance of robot
 
 **Finished**
 * Import arm and trajectory files
 * Compute Forward Kinematics for t=0, with 4 links
 * Compute Forward Kinematics for arbitrary link count
-
+* Compute Jacobian for 4R robot
+* Compute Jacobian for arbitrary link count
 
 **Bugs/Concerns**
-* The initial y(0) value in trajectory is being truncated to 0 when using fscanf
+* The initial y(0) value in trajectory might be truncated to 0 when using fscanf
+* How would it be possible to use DLS equation of delta_theta = (J'/(J*J' + lambda^2.*I) ) * delta_pos is 3x1 and not compatible with the other part
 
 
 

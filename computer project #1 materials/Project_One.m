@@ -1,5 +1,4 @@
-% main();
-disp("Waiting");
+main()
 
 
 function out = main()
@@ -26,14 +25,16 @@ function out = main()
     numPositions = traj(1,1);
     traj = traj(2:end,:);
     
+
     % Initialize output file
     outputAngles = zeros(numPositions, numLinks);
     
     
     for i = 1:numPositions 
-        desPos = traj(i);
-    
-        while true
+        desPos = [traj(i, :), 0]'; % Add zero z val and turn pos into column vector
+        
+        % while true
+        for loop = 1:2
             dhParams = constructDHTable(linkLengths, currJointAngles, numLinks);
             endEffectorPos = forwardKinematicsPlanar(dhParams, numLinks);
     
@@ -44,9 +45,10 @@ function out = main()
             currJointAngles = currJointAngles + delta_theta; %TODO: verify compatible sizes
     
             % TODO: add check for arm reaching edge of workspace
-            if delta_theta < thetaMin
-                break;
-            end
+            % TODO: Take magnitude here, since vectors
+            %if delta_theta < thetaMin
+            %    break;
+            %end
         end
         
         outputAngles(i,:) = currJointAngles';
@@ -102,7 +104,7 @@ function pos = forwardKinematicsPlanar(dhParams, linkCount)
    
     T0j = constructHomoTransform_0n(dhParams, linkCount) ;  
 
-    pos = T0j(1:2, 4);
+    pos = T0j(1:3, 4);
 end
 
 function jacobian = computeJacobian(dhParams, linkCount)
@@ -131,8 +133,11 @@ end
 
 %TODO: check J has valid transpose
 function delta_theta = DLS(jacobian, lambda, delta_pos)
-    J = jacobian;
-    I = eye(size(J));
-
-    delta_theta = (J'/(J*J' + lambda^2*I) )*delta_pos ;
+   J = jacobian;
+   I = eye(size(J, 1));
+   A = J*J';
+   B = A + lambda^2*I;
+   C = J'/B;
+   D = C * delta_pos;
+   %delta_theta = (J'/(J*J' + lambda^2.*I) )*delta_pos ;
 end
