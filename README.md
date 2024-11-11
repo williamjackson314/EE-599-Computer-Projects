@@ -1,7 +1,8 @@
 PROJECT #1
 -------------------------------------------------------------------------------------------
 UNFINISHED
-Solve Jacobian
+Compute Jacobian for 4R robot
+Computer Jacobian for arbitrary link count
 One DLS loop, no repition for angle diff minimization 
 Full DLS loop for one point along trajectory
 Full DLS loop for arbitrary trajectory points
