@@ -1,6 +1,6 @@
 PROJECT #1
 -------------------------------------------------------------------------------------------
-UNFINISHED
+**Unfinished**
 Compute Jacobian for 4R robot
 Computer Jacobian for arbitrary link count
 One DLS loop, no repition for angle diff minimization 
@@ -8,18 +8,18 @@ Full DLS loop for one point along trajectory
 Full DLS loop for arbitrary trajectory points
 Evaluate performance of robot
 
-FINISHED
-Import arm and trajectory files
-Compute Forward Kinematics for t=0, with 4 links
-Compute Forward Kinematics for arbitrary link count
+**Finished**
+* Import arm and trajectory files
+* Compute Forward Kinematics for t=0, with 4 links
+* Compute Forward Kinematics for arbitrary link count
 
 
-BUGS/CONCERNS
+**Bugs/Concerns**
 * The initial y(0) value in trajectory is being truncated to 0 when using fscanf
 
 
 
-DLS PROCEDURE
+**DLS Procedure**
 1) Compute forward kinematics to find end-effector position
 2) Calculate position differential: desired pos - curr pos
 3) Compute the Jacobian
