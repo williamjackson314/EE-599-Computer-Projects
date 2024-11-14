@@ -4,7 +4,7 @@
 function check_angles
     load trajectory
     trajectory=trajectory(2:end,:); % Remove first line of values
-    load angles
+    load angles.dat
     load arm
     [m,n]=size(angles);
     dtheta=diff(angles);

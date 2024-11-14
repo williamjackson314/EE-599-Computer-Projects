@@ -1,7 +1,7 @@
 main()
 
 
-function out = main()
+function main()
 
     %Read in joint position values
     armFileID = fopen('arm','r');
@@ -15,7 +15,7 @@ function out = main()
     arm = arm(2:end,:);
     currJointAngles = arm(:,2);
     linkLengths = arm(:,1);
-    thetaMin = 1;
+    thetaMin = 10^-3;
     
     %Read in trajectory data
     trajFileID = fopen('trajectory', 'r');
@@ -31,113 +31,69 @@ function out = main()
     
     
     for i = 1:numPositions 
-        desPos = [traj(i, :), 0]'; % Add zero z val and turn pos into column vector
-        
-        % while true
-        for loop = 1:2
-            dhParams = constructDHTable(linkLengths, currJointAngles, numLinks);
-            endEffectorPos = forwardKinematicsPlanar(dhParams, numLinks);
+        desPos = traj(i, :)';
+
+        while true
+
+            endEffectorPos = forwardKinematicsPlanar(linkLengths, currJointAngles, numLinks);
     
             delta_pos = desPos - endEffectorPos;
-            J = computeJacobian(dhParams, numLinks);
+            J = computeJacobian(linkLengths, currJointAngles, numLinks);
             delta_theta = DLS(J, lambda, delta_pos);
-            
+
             currJointAngles = currJointAngles + delta_theta; %TODO: verify compatible sizes
-    
             % TODO: add check for arm reaching edge of workspace
-            % TODO: Take magnitude here, since vectors
-            %if delta_theta < thetaMin
-            %    break;
-            %end
+            if norm(delta_theta) < thetaMin
+               break;
+            end
+
         end
         
         outputAngles(i,:) = currJointAngles';
     end
 
-    out = outputAngles;
+    writematrix(outputAngles, 'angles.dat');
 end
+
 
 %%Forward Kinematics
-function dhTable = constructDHTable(linkLengths, jointAngles, linkCount)
-    
-    if size(linkLengths,1) ~= linkCount || size(jointAngles,1) ~= linkCount
-        error('Number of arm parameters does not match number of links');
-    end
-    
-    alpha = zeros(linkCount, 1); % Planar robot, no link twist
-    a = linkLengths;
-    d = zeros(linkCount, 1); % Planar robot, no link offset
-    theta = jointAngles;
-    dhTable = [alpha, a, d, theta];
+function pos = forwardKinematicsPlanar(linkLengths, jointAngles, linkCount)
+   theta = 0;
+   x = 0;
+   y = 0;
+
+   for i = 1:linkCount
+       link = linkLengths(i);
+       theta = theta + jointAngles(i);
+       
+       x = x + link*cos(theta) ;
+       y = y + link*sin(theta);
+   end
+
+   pos = [x;y];
 end
 
-function homoTransform = constructHomoTransform_ij(dhParams, j)
+function jacobian = computeJacobian(linkLengths, jointAngles, linkCount)
+   jacobian = zeros(2, linkCount);
+   theta = 0;
+   Jx = 0;
+   Jy = 0;
 
-    % Transform from i to j
-    alpha_j = dhParams(j, 1);
-    a_j = dhParams(j, 2);
-    d_j = dhParams(j, 3);
-    theta_j = dhParams(j, 4);
+   for i = 1:linkCount
+       link = linkLengths(i);
+       theta = theta + jointAngles(i);
+       
+       Jx = Jx - link*sin(theta);
+       Jy = Jy + link*cos(theta);
 
-    Tij = [cos(theta_j),-sin(theta_j)*cos(alpha_j), sin(theta_j)*sin(alpha_j),  a_j*cos(theta_j);
-           sin(theta_j), cos(theta_j)*cos(alpha_j), -cos(theta_j)*sin(alpha_j), a_j*sin(theta_j);
-           0,            sin(alpha_j),              cos(alpha_j),               d_j;
-           0,            0,                         0,                          1];
-
-    homoTransform = Tij;
-end
-
-function homoTransform = constructHomoTransform_0n(dhParams, n)
-    for j = 1:n
-        if j == 1
-            T0j = constructHomoTransform_ij(dhParams, j);
-        else
-            Tij = constructHomoTransform_ij(dhParams, j);
-            T0j = T0j*Tij;
-        end
-    end 
-    
-    homoTransform = T0j;
-end
-
-function pos = forwardKinematicsPlanar(dhParams, linkCount)
-   
-    T0j = constructHomoTransform_0n(dhParams, linkCount) ;  
-
-    pos = T0j(1:3, 4);
-end
-
-function jacobian = computeJacobian(dhParams, linkCount)
-   jacobian = zeros(6, linkCount);
-   T0n = constructHomoTransform_0n(dhParams,linkCount);
-    
-   on = T0n(1:3, 4);
-   
-   z0 = [0;0;1];
-   o0 = [0;0;0];
-   Jv0 = cross(z0, (on-o0));
-   Jw0 = z0;
-   J0 = [ Jv0; Jw0 ];
-   jacobian(:,1) = J0;
-
-   for j = 1:linkCount-1
-       T0j = constructHomoTransform_0n(dhParams, j);
-       zj = T0j(1:3, 3);
-       oj = T0j(1:3, 4);
-       Jv = cross(zj, (on-oj));
-       Jw = zj;
-       Jj = [ Jv; Jw ];
-       jacobian(:,j+1) = Jj;
+       jacobian(:, i) = [Jx;Jy];
    end
 end
 
 %TODO: check J has valid transpose
 function delta_theta = DLS(jacobian, lambda, delta_pos)
-   J = jacobian;
-   I = eye(size(J, 1));
-   A = J*J';
-   B = A + lambda^2*I;
-   C = J'/B;
-   D = C * delta_pos;
-   %delta_theta = (J'/(J*J' + lambda^2.*I) )*delta_pos ;
+    J = jacobian;
+    I = eye(size(J, 1));
+    A = (J'/(J*J' + lambda^2.*I) );
+    delta_theta = A*delta_pos ;
 end
