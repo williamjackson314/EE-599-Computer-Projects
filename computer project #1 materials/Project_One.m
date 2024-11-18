@@ -15,7 +15,7 @@ function main()
     arm = arm(2:end,:);
     currJointAngles = arm(:,2);
     linkLengths = arm(:,1);
-    thetaMin = 10^-3;
+    thetaMin = 10^-6;
     
     %Read in trajectory data
     trajFileID = fopen('trajectory', 'r');
@@ -32,6 +32,7 @@ function main()
     
     for i = 1:numPositions 
         desPos = traj(i, :)';
+        boundaryCounter = 0;
 
         while true
 
@@ -41,11 +42,18 @@ function main()
             J = computeJacobian(linkLengths, currJointAngles, numLinks);
             delta_theta = DLS(J, lambda, delta_pos);
 
-            currJointAngles = currJointAngles + delta_theta; %TODO: verify compatible sizes
-            % TODO: add check for arm reaching edge of workspace
-            if norm(delta_theta) < thetaMin
+            currJointAngles = currJointAngles + delta_theta; 
+            
+            if (norm(delta_theta) < thetaMin) || (norm(desPos) > 40)
                break;
             end
+
+           if (norm(endEffectorPos) > 39.95)
+               boundaryCounter = boundaryCounter + 1;
+               if (boundaryCounter > 3)
+                   break;
+               end
+           end
 
         end
         
@@ -90,7 +98,6 @@ function jacobian = computeJacobian(linkLengths, jointAngles, linkCount)
    end
 end
 
-%TODO: check J has valid transpose
 function delta_theta = DLS(jacobian, lambda, delta_pos)
     J = jacobian;
     I = eye(size(J, 1));
